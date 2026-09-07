@@ -174,13 +174,49 @@ node alati/nalog.js obrisi <mejl>
 
 ### 9. nginx i TLS
 
+Ime sajta je **IP sa crticama umesto tacaka**, plus `.sslip.io`. sslip.io
+razresava adresu iz samog imena, pa Let's Encrypt izdaje pravi sertifikat i bez
+kupljenog domena. Za IP `134.122.75.34` ime je `134-122-75-34.sslip.io`.
+
+```bash
+IME=$(curl -s ifconfig.me | tr . -).sslip.io && echo "$IME"
+```
+
 ```bash
 sudo cp /opt/aic-sajt/nginx-aic.conf /etc/nginx/sites-available/aic
+sudo sed -i "s/<ip-sa-crticama>.sslip.io/$IME/" /etc/nginx/sites-available/aic
 sudo ln -sf /etc/nginx/sites-available/aic /etc/nginx/sites-enabled/aic
-grep -Rn 'limit_req_zone' /etc/nginx/    # ako zona `prijava` vec postoji, preimenuj nasu
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d <ip-sa-crticama>.sslip.io
+grep -n server_name /etc/nginx/sites-available/aic
 ```
+
+**Zona za ogranicenje broja zahteva mora da se DEFINISE**, i to u `http` bloku.
+`nginx-aic.conf` je samo koristi (`limit_req zone=prijava`), pa bez definicije
+`nginx -t` javi `zero size shared memory zone "prijava"`. Ne dira se
+`nginx.conf` -- fajl u `conf.d/` je vec unutar `http` bloka i ne moze da pokvari
+tudju konfiguraciju:
+
+```bash
+grep -Rn 'limit_req_zone' /etc/nginx/ --include='*.conf' /etc/nginx/sites-enabled/ | grep -v '^\s*#'
+```
+
+Ako gornje NISTA ne ispise (komentari se ne racunaju), napravi zonu:
+
+```bash
+echo 'limit_req_zone $binary_remote_addr zone=prijava:1m rate=1r/s;' \
+  | sudo tee /etc/nginx/conf.d/aic-limit.conf >/dev/null
+```
+
+Ako zona `prijava` VEC postoji kod drugog sajta, nginx ce pasti sa
+`limit_req_zone "prijava" is already bound` -- tada nasu preimenuj u
+`aic_prijava` i u `conf.d/aic-limit.conf` i u `sites-available/aic`.
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d "$IME"
+```
+
+certbot sam dopisuje `listen 443 ssl`, putanje do sertifikata i preusmerenje sa
+80 na 443, i sam postavlja obnavljanje preko svog tajmera.
 
 **Nikad `systemctl restart nginx`** dok na masini stoje i drugi sajtovi -- `reload`
 sa losom konfiguracijom ne obara nginx koji radi, `restart` obara.
