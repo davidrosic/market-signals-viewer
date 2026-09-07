@@ -1,0 +1,4 @@
+node_modules/
+*.log
+
+# web/dist se NE ignorise -- namerno. Vidi README, odeljak "Zasto dist ide u git".
