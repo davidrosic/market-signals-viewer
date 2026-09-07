@@ -1,0 +1,30 @@
+# Ovih pet redova idu NA VRH /etc/postgresql/<verzija>/main/pg_hba.conf, kad
+# `aic` deli Postgres klaster sa drugim sajtom. Pa:
+#
+#   sudo systemctl reload postgresql
+#
+# ZASTO: `REVOKE CONNECT ON DATABASE aic FROM PUBLIC` u pg_uz_postojeci.sql
+# stiti NASU bazu od tudjih rola. Ne radi obrnuto. Provereno na cistom
+# klasteru sa dve baze: bez ovih redova rola `sajt` -- ona kojom se povezuje
+# proces okrenut internetu -- otvara i tudju bazu i cita joj kataloge. Obrnuti
+# lek (`REVOKE CONNECT` nad tudjom bazom) bi oborio tudji sajt ako se on
+# oslanja na PUBLIC, pa se granica povlaci ovde, gde tudje role ne diramo.
+#
+# REDOSLED JE SVE. pg_hba se cita odozgo i pobedjuje PRVO pravilo koje se
+# poklopi. Ispod opstih redova ova bi bila mrtva slova.
+#
+# Provereno u oba smera, sve tri putanje (IPv4, IPv6, unix socket):
+#   sajt -> tudja baza  = rejects connection
+#   sajt -> baza aic    = prolazi
+#   tudja rola -> tudja baza = prolazi, nedirnuto
+#
+# `local` red treba jer `psql -U aic` bez `-h` ide preko socketa i zaobisao bi
+# `host` redove; `::1/128` treba jer `localhost` ume da se razresi u IPv6.
+
+# --- aic pocetak ---
+local   aic     aic,sajt                                scram-sha-256
+host    aic     aic,sajt        127.0.0.1/32            scram-sha-256
+host    aic     aic,sajt        ::1/128                 scram-sha-256
+local   all     aic,sajt                                reject
+host    all     aic,sajt        all                     reject
+# --- aic kraj ---

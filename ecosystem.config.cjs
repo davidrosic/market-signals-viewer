@@ -1,6 +1,6 @@
 // PM2. Pusta se sa dropleta:
 //
-//   sudo pm2 start /opt/aic/sajt-node/ecosystem.config.cjs
+//   sudo pm2 start /opt/aic-sajt/ecosystem.config.cjs
 //   sudo pm2 save
 //
 // LOZINKE OVDE NEMA i ne sme da je bude -- ovaj fajl je u gitu. AIC_DSN cita
@@ -8,10 +8,10 @@
 module.exports = {
   apps: [{
     name: 'aic-sajt',
-    script: '/opt/aic/sajt-node/pokreni.sh',
+    script: '/opt/aic-sajt/pokreni.sh',
     // Bash, ne node: PM2 podrazumevano svaki `script` gura kroz node.
     interpreter: 'bash',
-    cwd: '/opt/aic/sajt-node/server',
+    cwd: '/opt/aic-sajt/server',
 
     // Jedan proces, ne cluster. `cluster` deli socket kroz node-ov master i
     // ima smisla za CPU-vezan posao; ovaj sajt ceka bazu.
