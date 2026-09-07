@@ -17,7 +17,7 @@ set -euo pipefail
 
 ENVFAJL=${AIC_ENV:-/etc/aic/sajt.env}
 KORISNIK=${AIC_KORISNIK:-aic}
-KOREN=${AIC_KOREN:-/opt/aic-sajt}
+KOREN=${AIC_KOREN:-/var/www/market-signals-viewer}
 
 [ -r "$ENVFAJL" ] || { echo "ne mogu da procitam $ENVFAJL" >&2; exit 1; }
 set -a; . "$ENVFAJL"; set +a

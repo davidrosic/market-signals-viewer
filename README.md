@@ -52,21 +52,40 @@ nas dobija svoju bazu i svoje role. Detalji i zamke su u `deploy/uz-drugi-sajt.m
 
 ### 1. Kod
 
+Prvo korisnik pod kojim ce servis raditi. Sistemski nalog bez prijave -- sluzi
+samo da proces okrenut internetu ne bude root:
+
+```bash
+sudo adduser --system --group --no-create-home --shell /usr/sbin/nologin aic
+```
+
+Bez ovog koraka svaki kasniji `chown root:aic` puca sa
+`chown: invalid group: 'root:aic'`.
+
 ```bash
 sudo mkdir -p /opt/aic-sajt /var/log/aic
-sudo chown $USER:aic /opt/aic-sajt
 git clone <url-ovog-repoa> /opt/aic-sajt
+sudo chown -R root:aic /opt/aic-sajt && sudo chmod -R a+rX /opt/aic-sajt
 cd /opt/aic-sajt/server && npm ci --omit=dev
 ```
+
+`a+rX` treba nginx-u: on radi kao `www-data` i cita `web/dist`.
 
 `npm ci` samo u `server/`. `web/` se NE gradi ovde -- `dist/` vec stoji u repou.
 
 ### 2. Baza i role   ← jednom, kao administrator klastera
 
+**`-hex`, ne `-base64`.** `openssl rand -base64` daje `+`, `/` i `=`, a `/` u
+lozinci obara DSN: `postgresql://aic:x5KU.../J9L@127.0.0.1:5432/aic` se raspada
+na tom `/`, pa libpq procita `x5KU...` kao PORT i javi
+`invalid integer value ... for connection option "port"`. Provereno: `/` obara,
+`+` prolazi, hex prolazi. 24 bajta u hex-u je 48 znakova i 192 bita -- vise nego
+dovoljno.
+
 ```bash
-LOZ_VLASNIK=$(openssl rand -base64 24) && echo "VLASNIK: $LOZ_VLASNIK"
+LOZ_VLASNIK=$(openssl rand -hex 24) && echo "VLASNIK: $LOZ_VLASNIK"
 sudo -u postgres psql -v loz_vlasnik="'$LOZ_VLASNIK'" -f /opt/aic-sajt/baza/pg_uz_postojeci.sql
-LOZ_SAJT=$(openssl rand -base64 24) && echo "SAJT: $LOZ_SAJT"
+LOZ_SAJT=$(openssl rand -hex 24) && echo "SAJT: $LOZ_SAJT"
 sudo -u postgres psql -c "ALTER ROLE sajt LOGIN PASSWORD '$LOZ_SAJT'"
 ```
 
@@ -98,6 +117,13 @@ sudo chmod 640 /etc/aic/sajt.env && sudo chown root:aic /etc/aic/sajt.env
 ```
 
 `AIC_RESTART` cita `objavi.sh` -- bez njega bi pokusao `systemctl`, a ovde je PM2.
+
+Proveri odmah, pre seme -- inace se kvar u DSN-u vidi tek tri koraka kasnije:
+
+```bash
+set -a; . /etc/aic/vlasnik.env; set +a
+psql "$AIC_DSN_VLASNIK" -c 'SELECT current_user, current_database()'
+```
 
 ### 5. Sema
 
