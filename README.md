@@ -21,6 +21,7 @@ sajt-node/
   pokreni.sh        omotac za PM2: cita /etc/aic/sajt.env, spusta prava
   ecosystem.config.cjs
   rezerva.sh        dnevna kopija seme `auth`
+  posalji.sh        build + commit + push + pull/restart, jednom komandom
 ```
 
 ---
@@ -232,12 +233,33 @@ sudo chmod +x /opt/aic-sajt/rezerva.sh
 
 ## Osvezavanje
 
-**Kod** (posle izmene, sa Maca `git push` pa na dropletu):
+**Kod.** Posto je `web/dist/` u gitu, izmena u `web/src/` se NE VIDI dok se ne
+pokrene build. Zato jedna komanda, na Macu iz `sajt-node/`:
 
 ```bash
-git -C /opt/aic-sajt pull
-cd /opt/aic-sajt/server && npm ci --omit=dev   # samo ako se package.json menjao
-sudo pm2 restart aic-sajt
+AIC_DROPLET=root@<ip> ./posalji.sh "sta si promenio"
+```
+
+Ona redom: izgradi frontend, pusti testove servera (0,5 s; ako padnu, ne salje
+nista), commituje `src` i `dist` zajedno, gurne u git, pa na dropletu povuce i
+restartuje. `npm ci` na dropletu pusta samo kad se `server/package.json` stvarno
+menjao.
+
+Bez `AIC_DROPLET` samo gurne u git, pa na dropletu rucno:
+
+```bash
+cd /opt/aic-sajt && git pull && sudo pm2 restart aic-sajt
+```
+
+Statiku sluzi nginx pravo iz `web/dist`, pa je ona ziva vec posle `git pull` --
+restart je zbog Node servera. Pregledac ne moze da ostane na starom bundle-u:
+`nginx-aic.conf` salje `Cache-Control: no-cache`, dakle svaki put pita da li se
+fajl promenio, a Vite ionako menja ime fajla kad se sadrzaj promeni.
+
+Rucno, ako ti tako vise odgovara:
+
+```bash
+cd web && npm run build && cd .. && git add -A && git commit -m "..." && git push
 ```
 
 **Podaci** (posle pipeline prolaza, sa Maca):
