@@ -30,7 +30,7 @@ export default function Prov({ url, method, citat }) {
         onBlur={() => postavi(false)}
       />
       {otvoren && (
-        <Nadsloj sidro={tacka} klasa="tip on" naZatvaranje={zatvori}>
+        <Nadsloj sidro={tacka} klasa="tip on" slojKlasa="vrh" naZatvaranje={zatvori}>
           {citat && <b>{'“' + String(citat).slice(0, 300) + '”'}</b>}
           <span className="u">{(method ? '[' + method + '] ' : '') + url}</span>
         </Nadsloj>

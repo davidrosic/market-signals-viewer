@@ -196,7 +196,7 @@ td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
 }
 .prov-dot:hover{opacity:1;transform:scale(1.5);background:var(--acc)}
 .tip{
-  position:fixed;z-index:99;max-width:430px;padding:10px 12px;
+  position:absolute;max-width:430px;padding:10px 12px;
   background:var(--ink);color:var(--bg);border-radius:var(--r-s);font-size:12.5px;
   line-height:1.5;box-shadow:var(--shadow);opacity:0;pointer-events:none;
   transition:opacity var(--fast);
@@ -271,6 +271,21 @@ body.neprijavljen .foot{display:none}
 .primary:disabled{opacity:.55;cursor:default}
 .p-greska{color:var(--bad);font-size:13px;min-height:18px}
 
+/* Sloj preko celog prozora u koji se portalom crtaju izbornik i oblacic.
+   `inset:0` na `position:fixed` znaci tacno prozor, pa je `left/top` sadrzaja
+   unutra po DEFINICIJI ekranska koordinata -- ne zavisi od toga da li neki
+   predak ima transform. Zamenjuje `position:fixed` na oba sadrzaja: `fixed` se
+   racuna prema pretku sa transformom, a takav se dobija i slucajno (popunjen
+   zavrsni okvir animacije, `a.card:hover`).
+
+   `pointer-events:none` na sloju, `auto` samo na izborniku: sloj koji hvata
+   misa bi ubio skrolovanje tockicem preko cele strane, a oblacic ionako ne sme
+   da hvata. Zato se „klik van zatvara" i dalje radi osluskivacem na dokumentu,
+   ne ovim slojem -- sloj koji se ukloni na `pointerdown` pusti `click` do
+   zvezdice ispod sebe, pa bi ona izbornik odmah ponovo otvorila. */
+.nadsloj{position:fixed;inset:0;z-index:60;pointer-events:none}
+.nadsloj.vrh{z-index:99}
+
 /* --- sacuvano -----------------------------------------------------------
    Dugme je zvezdica uz sam podatak, ne zaseban red: sacuvava se JEDAN nalaz
    (ta cena, ta recenica), pa kontrola mora da stoji tacno uz njega.       */
@@ -284,7 +299,7 @@ body.neprijavljen .foot{display:none}
 .head-desno .cuvaj{font-size:18px}
 
 .izbornik{
-  position:fixed;z-index:60;min-width:210px;max-width:250px;display:none;
+  position:absolute;pointer-events:auto;min-width:210px;max-width:250px;display:none;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
   box-shadow:var(--shadow);padding:6px;
 }
