@@ -1,28 +1,21 @@
 // Provenijencija: svaki podatak nosi izvor (CLAUDE.md, ogranicenje 4).
 // Tacka pored broja otvara citat i URL sa kog je procitan.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+
+import Nadsloj from './Nadsloj.jsx';
 
 export default function Prov({ url, method, citat }) {
   const [otvoren, postavi] = useState(false);
-  const [gde, postaviGde] = useState({ left: 0, top: 0 });
   const tacka = useRef(null);
 
-  // Tooltip mora da izadje iz svakog `overflow:hidden` roditelja (tabele,
-  // kartice), pa se crta u fiksnom sloju nad stranom i pozicionira racunski.
-  const pokazi = () => {
-    const r = tacka.current?.getBoundingClientRect();
-    if (!r) return;
-    postaviGde({ left: Math.min(r.left, window.innerWidth - 450), top: r.bottom + 8 });
-    postavi(true);
-  };
-
-  useEffect(() => {
-    if (!otvoren) return undefined;
-    const sakrij = () => postavi(false);
-    // Skrol pomera tacku a tooltip ostaje -- zato se zatvara na skrol.
-    window.addEventListener('scroll', sakrij, true);
-    return () => window.removeEventListener('scroll', sakrij, true);
-  }, [otvoren]);
+  // Oblacic mora da izadje iz svakog `overflow:hidden` roditelja (tabele,
+  // kartice) -- zato Nadsloj, koji ga crta portalom u <body> i namesta po
+  // IZMERENOJ velicini. Ranije je racun ovde bio `top: r.bottom + 8` bez
+  // ijedne gornje granice, pa je citat od 300 znakova kod tacke pri dnu strane
+  // ispadao ispod ruba prozora, a `pointer-events:none` znaci da se do njega
+  // nije moglo ni doskrolovati.
+  const zatvori = useCallback(() => postavi(false), []);
+  const pokazi = () => postavi(true);
 
   if (!url) return null;
   return (
@@ -37,10 +30,10 @@ export default function Prov({ url, method, citat }) {
         onBlur={() => postavi(false)}
       />
       {otvoren && (
-        <span className="tip on" style={{ left: gde.left + 'px', top: gde.top + 'px' }}>
+        <Nadsloj sidro={tacka} klasa="tip on" naZatvaranje={zatvori}>
           {citat && <b>{'“' + String(citat).slice(0, 300) + '”'}</b>}
           <span className="u">{(method ? '[' + method + '] ' : '') + url}</span>
-        </span>
+        </Nadsloj>
       )}
     </>
   );

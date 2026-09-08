@@ -71,7 +71,7 @@ select:focus,input:focus{outline:none;border-color:var(--acc);
   border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
   max-height:400px;overflow:auto;display:none;z-index:50;
 }
-.qres.on{display:block;animation:pop var(--slow) both}
+.qres.on{display:block;animation:pop var(--slow) backwards}
 .qres a{display:block;padding:9px 12px;color:var(--ink);border-bottom:1px solid var(--line)}
 .qres a:last-child{border-bottom:0}
 .qres a:hover{background:var(--acc-soft);text-decoration:none}
@@ -100,7 +100,15 @@ select:focus,input:focus{outline:none;border-color:var(--acc);
 
 /* --- raspored ----------------------------------------------------------- */
 .view{max-width:1240px;margin:0 auto;padding:26px 22px 70px}
-.view>*{animation:rise var(--slow) both}
+/* `backwards`, NIKAD `both`. Sa `both` animacija posle kraja i dalje POPUNJAVA
+   zavrsni okvir, a popunjeno `transform:none` je matrica identiteta -- ne
+   kljucna rec. Matrica, pa i jedinicna, pravi blok prema kome se racuna
+   `position:fixed`, pa je svaka sekcija postajala okvir za izbornik "sacuvaj" i
+   za oblacic provenijencije. Mereno: sloj trazen na (1020, 460) crtao se na
+   (1055, 650). Kako se ovde nista ne odlaze (`animation-delay` je 0) i zavrsni
+   okvir je jednak osnovnoj vrednosti, `backwards` izgleda isto a ne ostavlja
+   transform za sobom. */
+.view>*{animation:rise var(--slow) backwards}
 @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(-5px) scale(.99)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){
@@ -280,7 +288,7 @@ body.neprijavljen .foot{display:none}
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
   box-shadow:var(--shadow);padding:6px;
 }
-.izbornik.on{display:block;animation:pop var(--slow) both}
+.izbornik.on{display:block;animation:pop var(--slow) backwards}
 .iz-grp{padding:5px 8px;font-size:11px;text-transform:uppercase;
   letter-spacing:.07em;color:var(--ink-3)}
 .iz-red{
@@ -347,7 +355,16 @@ body.neprijavljen .foot{display:none}
       predmet. Ista povrsina kao `.card`, bez senke da ne konkurise karticama. */
 .wrap{
   background:var(--panel);border:1px solid var(--line);
-  border-radius:var(--r);overflow:hidden auto;
+  /* `overflow-x:auto`, ne `hidden`. Ovaj dizajnerski prolaz je bio prepisao
+     `overflow-x:auto` iz odeljka o tabeli u `hidden auto` -- radi zaobljenih
+     uglova -- i time odsekao sve sto ne stane u sirinu, bez ikakvog nacina da
+     se do toga dodje. Mereno na strani `seo` pri 375px: tabela je 624px u
+     kutiji od 329, dakle 295px -- skoro polovina -- van dohvata. `scrollLeft`
+     se i sa `hidden` menja programski, ali korisnik nema ni traku ni
+     prevlacenje, pa mu to ne vredi nista. Uglove
+     odseca svaki `overflow` koji nije `visible`, pa `auto` daje i jedno i
+     drugo. */
+  border-radius:var(--r);overflow-x:auto;
 }
 .wrap table{font-size:14px}
 .wrap tbody tr:last-child td{border-bottom:0}

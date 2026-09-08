@@ -7,6 +7,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, nezavisno, posalji } from '../api.js';
+import Nadsloj from './Nadsloj.jsx';
 
 const Kontekst = createContext(null);
 export const useCuvano = () => useContext(Kontekst);
@@ -47,7 +48,6 @@ export function CuvanoProvider({ children, prijavljen }) {
 export function Cuvaj({ vrsta, kljuc }) {
   const c = useCuvano();
   const [otvoren, postavi] = useState(false);
-  const [gde, postaviGde] = useState({ left: 0, top: 0 });
   const [novi, postaviNovi] = useState('');
   const [greska, postaviGresku] = useState('');
   const [radi, postaviRadi] = useState(false);
@@ -57,23 +57,22 @@ export function Cuvaj({ vrsta, kljuc }) {
   const mesta = c?.indeks.get(vrsta + '|' + kljuc) || [];
   const sacuvano = mesta.length > 0;
 
+  // Skrol i promenu velicine hvata Nadsloj -- tamo je i polozaj koji oni kvare.
+  const zatvori = useCallback(() => postavi(false), []);
+
   useEffect(() => {
     if (!otvoren) return undefined;
+    // `meni` sada pokazuje na cvor u <body>, pa `contains` i dalje radi: klik
+    // U izborniku ga ne zatvara, klik bilo gde drugde zatvara.
     const vanKlik = (e) => {
       if (!meni.current?.contains(e.target) && !dugme.current?.contains(e.target)) postavi(false);
     };
     const esc = (e) => { if (e.key === 'Escape') postavi(false); };
-    // Izbornik je `position:fixed`, pa skrol pomeri dugme a njega ne.
-    const naSkrol = () => postavi(false);
     document.addEventListener('mousedown', vanKlik);
     document.addEventListener('keydown', esc);
-    window.addEventListener('scroll', naSkrol, true);
     return () => {
       document.removeEventListener('mousedown', vanKlik);
       document.removeEventListener('keydown', esc);
-      // Ovaj red je nedostajao: bez njega svako otvaranje izbornika ostavlja
-      // jos jedan osluskivac skrola koji nikad ne odlazi.
-      window.removeEventListener('scroll', naSkrol, true);
     };
   }, [otvoren]);
 
@@ -83,11 +82,6 @@ export function Cuvaj({ vrsta, kljuc }) {
     e.preventDefault();
     e.stopPropagation();
     if (otvoren) { postavi(false); return; }
-    const r = dugme.current.getBoundingClientRect();
-    postaviGde({
-      left: Math.min(r.left, window.innerWidth - 260),
-      top: Math.min(r.bottom + 6, window.innerHeight - 260),
-    });
     postaviGresku('');
     postavi(true);
   };
@@ -145,11 +139,7 @@ export function Cuvaj({ vrsta, kljuc }) {
         {sacuvano ? '★' : '☆'}
       </button>
       {otvoren && (
-        <div
-          ref={meni}
-          className="izbornik on"
-          style={{ left: gde.left + 'px', top: gde.top + 'px' }}
-        >
+        <Nadsloj sidro={dugme} nutar={meni} klasa="izbornik on" naZatvaranje={zatvori}>
           <div className="iz-grp">Save to</div>
           <button
             type="button"
@@ -186,7 +176,7 @@ export function Cuvaj({ vrsta, kljuc }) {
               onKeyDown={(e) => { if (e.key === 'Enter') napraviPa(); }}
             />
           </div>
-        </div>
+        </Nadsloj>
       )}
     </>
   );
